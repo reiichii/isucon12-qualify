@@ -540,53 +540,30 @@ def players_add_handler():
     display_names = request.values.getlist("display_name[]")
 
     player_details = []
-    params = []
     for display_name in display_names:
         id = dispense_id()
 
         now = int(datetime.now().timestamp())
 
         # memo: bulkinsert出来そう
-        # tenant_db.execute(
-        #     "INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        #     id,
-        #     viewer.tenant_id,
-        #     display_name,
-        #     False,
-        #     now,
-        #     now,
-        # )
-        # p = {
-        #     "id": id,
-        #     "tenant_id": viewer.tenant_id,
-        #     "display_name": display_name,
-        #     "is_disqualified": False,
-        #     "created_at": now,
-        #     "updated_at": now,
-        # }
-        p = [
+        tenant_db.execute(
+            "INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
             id,
             viewer.tenant_id,
             display_name,
             False,
             now,
             now,
-        ]
-        params.append(p)
-
-    tenant_db.execute(
-        "INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        params,
-    )
-
-    player = retrieve_player(tenant_db, id)
-    player_details.append(
-        PlayerDetail(
-            id=player.id,
-            display_name=player.display_name,
-            is_disqualified=player.is_disqualified,
         )
-    )
+
+        player = retrieve_player(tenant_db, id)
+        player_details.append(
+            PlayerDetail(
+                id=player.id,
+                display_name=player.display_name,
+                is_disqualified=player.is_disqualified,
+            )
+        )
 
     return jsonify(SuccessResult(status=True, data={"players": player_details}))
 
