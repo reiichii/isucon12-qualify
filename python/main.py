@@ -371,10 +371,9 @@ def billing_report_by_competition(
 
     # memo: slow query logが多発
     visit_history_summary_rows = admin_db.execute(
-        "SELECT player_id, MIN(created_at) AS min_created_at FROM visit_history WHERE tenant_id = %s AND competition_id = %s AND created_at < %s GROUP BY player_id",
+        "SELECT player_id, MIN(created_at) AS min_created_at FROM visit_history WHERE tenant_id = %s AND competition_id = %s GROUP BY player_id",
         tenant_id,
         competition.id,
-        competition.finished_at,
     ).fetchall()
 
     billing_map = {}
@@ -467,14 +466,11 @@ def tenants_billing_handler():
     #     scoreが登録されていないplayerでアクセスした人 * 10
     #   を合計したものを
     # テナントの課金とする
-    # memo: before活かせてない
-    tenant_rows = admin_db.execute(
-        f"SELECT id, name, display_name FROM tenant ORDER BY id DESC LIMIT 10 OFFSET {before_id}",
-    ).fetchall()
+    tenant_rows = admin_db.execute("SELECT * FROM tenant ORDER BY id DESC").fetchall()
     tenant_billings = []
     for tenant_row in tenant_rows:
-        # if before_id != 0 and before_id <= tenant_row.id:
-        #     continue
+        if before_id != 0 and before_id <= tenant_row.id:
+            continue
         tenant_billing = TenantWithBilling(
             id=str(tenant_row.id),
             name=tenant_row.name,
@@ -483,7 +479,7 @@ def tenants_billing_handler():
         )
         tenant_db = connect_to_tenant_db(int(tenant_row.id))
         competition_rows = tenant_db.execute(
-            "SELECT id FROM competition WHERE tenant_id=?", tenant_row.id
+            "SELECT * FROM competition WHERE tenant_id=?", tenant_row.id
         ).fetchall()
 
         for competition_row in competition_rows:
@@ -493,8 +489,8 @@ def tenants_billing_handler():
             tenant_billing.billing += report.billing_yen
         tenant_billings.append(tenant_billing)
 
-        # if len(tenant_billings) >= 10:
-        #     break
+        if len(tenant_billings) >= 10:
+            break
 
     return jsonify(SuccessResult(status=True, data={"tenants": tenant_billings}))
 
